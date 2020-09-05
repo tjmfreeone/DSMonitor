@@ -28,13 +28,16 @@ class func_monitor(object):
             input_params = inspect.getcallargs(func, *args, **kwargs)
             
             self.func_obj_key = "f"+self._hash_it(func.__name__)
+            temp = {}
+            temp.update(func.__globals__)
+            temp.update(globals())
+            globals().update(temp)
             globals()[self.func_obj_key] = None
 
             new_func = self.fhc.get_func_obj(self.func_obj_key)
             if not new_func:
                 new_func = self._new_func_obj(func, "new_func")
                 self.fhc.append_new_func(self.func_obj_key, new_func)
-
             start_ts = time.time()
             res = new_func(*args, **kwargs)
             cost_time = time.time() - start_ts
@@ -58,7 +61,7 @@ class func_monitor(object):
             logging.info(logging_info)
             return res
         return wrapper
-
+        
     def _new_func_obj(self, func, new_func_name):
         src = inspect.getsource(func)
         src_list = src.splitlines()

@@ -78,6 +78,31 @@ if __name__ == "__main__":
 [2020-09-06  10:23:12] INFO (async)func: async_func, input: {'n': 1}, output: type 'NoneType', memory cost: 112, time cost: 2.464, output detail: None
 [2020-09-06  10:23:15] INFO (async)func: async_func, input: {'n': 2}, output: type 'NoneType', memory cost: 112, time cost: 3.034, output detail: None
 ```
+需要说明的是,如果你的异步函数是一个异步生成器,上面的async_func_monitor不会奏效.DSMonitor考虑到了这种情况,并且给出了async_generator_monitor的解决方案:
+```python
+from DSMonitor import func_monitor, async_func_monitor, async_generator_monitor
+import asyncio
+
+async def async_gen(n):
+    async for i in foo(1):
+        print(i)
+
+@async_generator_monitor()
+async def foo(x):
+    while x < 10:
+        yield x
+        x+= 1
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(async_gen(0))
+```
+运行这段代码,将在终端得到
+```bash
+[2020-09-06  12:45:20] INFO (async)func: foo, input: {'x': 1}, output: type 'async_generator', memory cost: 112, time cost: 0.000
+<async_generator object new_func at 0x7f1d92f55f50>
+```
+
 
 <a name="EN"></a>
 ## EN
@@ -124,7 +149,7 @@ Then we will see in the terminal:
 ```
 func_monitor prints the input, output type, time used, and memory usage of the function on the terminal, and can set the value of the parameter level and show_output to determine whether to output the stack frame and return result together
 
-The above is the usage in the synchronous function scenario. If you want to implement the same operation for asynchronous functions, dsmonitor also provides async_ func_ Monitor, for example:
+The above is the usage in the synchronous function scenario. If you want to implement the same operation for asynchronous functions, dsmonitor also provides async_func_monitor, for example:
 ```python
 from DSMonitor import func_monitor, async_func_monitor
 import aiohttp
@@ -150,12 +175,36 @@ if __name__ == "__main__":
     for i in range(3):
         loop.run_until_complete(async_func(i))
 ```
-Running this code, we will see in the terminal:
+running this code, we will see in the terminal:
 ```bash
 [2020-09-06  10:23:07] DEBUG func: func, input: {}, output: type 'int', memory cost: 112, time cost: 0.000, locals: {'b': 2, 'a': 1}, output detail: 3
 [2020-09-06  10:23:09] INFO (async)func: async_func, input: {'n': 0}, output: type 'NoneType', memory cost: 112, time cost: 2.478, output detail: None
 [2020-09-06  10:23:12] INFO (async)func: async_func, input: {'n': 1}, output: type 'NoneType', memory cost: 112, time cost: 2.464, output detail: None
 [2020-09-06  10:23:15] INFO (async)func: async_func, input: {'n': 2}, output: type 'NoneType', memory cost: 112, time cost: 3.034, output detail: None
+```
+It should be noted that if your asynchronous function is an asynchronous generator, above async_func_monitor doesn't work. DSMonitor takes this into account and gives async_generator_monitor solution:
+```python
+from DSMonitor import func_monitor, async_func_monitor, async_generator_monitor
+import asyncio
+
+async def async_gen(n):
+    async for i in foo(1):
+        print(i)
+
+@async_generator_monitor()
+async def foo(x):
+    while x < 10:
+        yield x
+        x+= 1
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(async_gen(0))
+```
+run this code, you will get
+```bash
+[2020-09-06  12:45:20] INFO (async)func: foo, input: {'x': 1}, output: type 'async_generator', memory cost: 112, time cost: 0.000
+<async_generator object new_func at 0x7f1d92f55f50>
 ```
 
 ## History
@@ -163,3 +212,5 @@ Running this code, we will see in the terminal:
 - func_monitor finished
 ### 0.1.10
 - add async_func_monitor
+### 0.1.20
+- add async_generator_monitor

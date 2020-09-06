@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO,
                     datefmt = '[%Y-%m-%d  %H:%M:%S]'
                     )
 
-class func_monitor(object):
+class async_func_monitor(object):
     
     def __init__(self, level='INFO', show_output=False):
         if level not in ["INFO", "DEBUG"]:
@@ -24,7 +24,7 @@ class func_monitor(object):
 
     def __call__(self, func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             input_params = inspect.getcallargs(func, *args, **kwargs)
             
             self.func_obj_key = "f"+self._hash_it(func.__name__)
@@ -39,18 +39,18 @@ class func_monitor(object):
                 new_func = self._new_func_obj(func, "new_func")
                 self.fhc.append_new_func(self.func_obj_key, new_func)
             start_ts = time.time()
-            res = new_func(*args, **kwargs)
+            res = await new_func(*args, **kwargs)
             cost_time = time.time() - start_ts
             cost_memory = func.__sizeof__()
 
             if isinstance(res, list) or isinstance(res, dict) or isinstance(res, tuple) or isinstance(res, set) or isinstance(res, str):
                 res_length = len(res)
                 res_type = str(type(res)).strip(">").strip("<").replace("class","type")
-                logging_info = "{} func: {}, input: {}, output: {}, length: {}, memory cost: {}, time cost: {:.3f}".format(
+                logging_info = "{} (async)func: {}, input: {}, output: {}, length: {}, memory cost: {}, time cost: {:.3f}".format(
                     self.level, func.__name__, input_params, res_type, res_length, cost_memory, cost_time)
             else:
                  res_type = str(type(res)).strip(">").strip("<").replace("class","type")
-                 logging_info = "{} func: {}, input: {}, output: {}, memory cost: {}, time cost: {:.3f}".format(
+                 logging_info = "{} (async)func: {}, input: {}, output: {}, memory cost: {}, time cost: {:.3f}".format(
                          self.level, func.__name__, input_params, res_type, cost_memory, cost_time)
 
             if self.level == "DEBUG":
@@ -65,8 +65,8 @@ class func_monitor(object):
     def _new_func_obj(self, func, new_func_name):
         src = inspect.getsource(func)
         src_list = src.splitlines()
-        if src_list[1].split("def")[0].strip() == "async":
-            raise Exceptions.DecoratorTypeError("func_monitor cannot be used for asynchronous functions, use async_func_monitor instead") 
+        if src_list[1].split("def")[0].strip() != "async":
+            raise Exceptions.DecoratorTypeError("async_func_monitor cannot be used for synchronizations functions, use func_monitor instead")
         src_list[1] = src_list[1].replace(func.__name__, new_func_name)
         src_list.insert(2,"    global {}".format(self.func_obj_key))
         src_list.insert(3,"    {} = inspect.currentframe()".format(self.func_obj_key))

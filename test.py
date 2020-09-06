@@ -19,4 +19,5 @@ async def async_func(n):
 if __name__ == "__main__":
     func()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(async_func(3))
+    for i in range(3):
+        loop.run_until_complete(async_func(i))
